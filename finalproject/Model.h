@@ -10,6 +10,7 @@ class Model
 public:
 	std::vector<GLfloat> verticies;
 	std::vector<GLfloat> normals;
+	std::vector<GLfloat> textures;
 	std::vector<unsigned int> faces;
 	std::vector<GLubyte> colors;
 	unsigned int numFaces;
