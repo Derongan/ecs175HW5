@@ -95,6 +95,7 @@ int main(int argc, char *argv[]) {
 	//scene.addModel(wheel4);
 
 	//Enable stuff
+	glEnable(GL_NORMALIZE);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
@@ -102,10 +103,10 @@ int main(int argc, char *argv[]) {
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
 
-	GLfloat pos[] = { 0,200,0,1 };
+	GLfloat pos[] = { 1,1,1,1};
 	glLightfv(GL_LIGHT0, GL_POSITION, pos);
 
-	glEnable(GL_LIGHT1);
+	//glEnable(GL_LIGHT1);
 	//glEnable(GL_AUTO_NORMAL);
 
 

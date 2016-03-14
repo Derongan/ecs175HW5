@@ -31,8 +31,14 @@ private:
 	} mat;
 
 	typedef struct {
+		std::vector<unsigned int> faces;
+		std::string matName;
+	} matGroup;
+
+	typedef struct {
 		std::string matName;
 		std::string name;
+		std::vector<matGroup*> pieces;
 		std::vector<unsigned int> faces;
 		float angleY;
 		float angleX;
@@ -52,7 +58,7 @@ public:
 	std::vector<unsigned int> faces;
 	std::vector<GLubyte> colors;
 	std::vector<component*> components;
-	std::vector<mat> materials;
+	std::vector<mat*> materials;
 	float scale = 1;
 	Model();
 	Model(float x, float y, float z);
@@ -64,6 +70,7 @@ public:
 	void rotateY(float angle);
 	void rotateZ(float angle);
 	void useMat(std::string name);
+	void defaultMat();
 	void translate(float x, float y, float z);
 
 	void rotateComponentByName(std::string name, float aX, float aY, float aZ);

@@ -22,7 +22,7 @@ bool Model::load(const std::string & path, const std::string & name)
 {
 	std::ifstream file;
 
-
+	std::string currentMat = "";
 
 	file.open(path+'/'+name);
 
@@ -35,6 +35,9 @@ bool Model::load(const std::string & path, const std::string & name)
 
 	component *comp = new component;
 
+	matGroup *cmat = new matGroup;
+	cmat->matName = currentMat;
+
 	while (!file.eof()) {
 		std::getline(file, line);
 		if (line.substr(0, 2) == "g ") {
@@ -42,9 +45,12 @@ bool Model::load(const std::string & path, const std::string & name)
 			std::string name;
 			ss >> name;
 
-
+			comp->pieces.push_back(cmat);
 			components.push_back(comp);
 
+
+			cmat = new matGroup();
+			cmat->matName = currentMat;
 			comp = new component();
 			comp->name = name;
 		}
@@ -74,6 +80,7 @@ bool Model::load(const std::string & path, const std::string & name)
 				ss.ignore(256, ' ');
 				num++;
 				comp->faces.push_back(v - 1);
+				cmat->faces.push_back(v - 1);
 				faces.push_back(v - 1);
 			} while (ss && num < 3);
 		}
@@ -81,17 +88,28 @@ bool Model::load(const std::string & path, const std::string & name)
 			std::istringstream ss(line.substr(7));
 			std::string mtl;
 			ss >> mtl;
-			continue;
+			//continue;
 			std::ifstream mtlfile;
 			mtlfile.open(path + '/' + mtl);
+			mat *current = nullptr;
 
 			while (mtlfile) {
 				std::getline(mtlfile, line);
-				mat *current = nullptr;
-				if (line.substr(0, 2) == "ne") {
+				if (line.size() > 1 && line.substr(0, 2) == "ne") {
+					if (current != nullptr) {
+						materials.push_back(current);
+						if (current->Ke.size() < 3) {
+							current->Ke.push_back(0);
+							current->Ke.push_back(0);
+							current->Ke.push_back(0);
+							current->Ke.push_back(0);
+						}
+					}
+					std::istringstream ss(line.substr(6));
 					current = new mat();
+					ss >> current->name;
 				}
-				if (current != nullptr) {
+				else if (line.size() > 1 && current != nullptr) {
 					if (line.substr(0, 2) == "Ns") {
 						std::istringstream ss(line.substr(2));
 						float val;
@@ -117,30 +135,30 @@ bool Model::load(const std::string & path, const std::string & name)
 						ss >> x >> y >> z;
 						switch (what) {
 						case 'a':
-							current->Ka[0] = x;
-							current->Ka[1] = y;
-							current->Ka[2] = z;
+							current->Ka.push_back(x);
+							current->Ka.push_back(y);
+							current->Ka.push_back(z);
 							break;
 						case 'd':
-							current->Kd[0] = x;
-							current->Kd[1] = y;
-							current->Kd[2] = z;
+							current->Kd.push_back(x);
+							current->Kd.push_back(y);
+							current->Kd.push_back(z);
 							break;
 						case 's':
-							current->Ks[0] = x;
-							current->Ks[1] = y;
-							current->Ks[2] = z;
+							current->Ks.push_back(x*.5);
+							current->Ks.push_back(y*.5);
+							current->Ks.push_back(z*.5);
 							break;
 						case 'e':
-							current->Ke[0] = x;
-							current->Ke[1] = y;
-							current->Ke[2] = z;
+							current->Ke.push_back(x);
+							current->Ke.push_back(y);
+							current->Ke.push_back(z);
 							break;
 						}
 					}
 				}
 			}
-
+			printf("Finished loading mat\n");
 			mtlfile.close();			
 		}
 		else if (line.substr(0, 2) == "us") {
@@ -149,6 +167,13 @@ bool Model::load(const std::string & path, const std::string & name)
 			ss >> mtl;
 
 			printf("Using material %s\n", mtl.c_str());
+
+			currentMat = mtl;
+
+			comp->pieces.push_back(cmat);
+
+			cmat = new matGroup;
+			cmat->matName = currentMat;
 		}
 	}
 
@@ -259,7 +284,11 @@ void Model::draw()
 		glRotatef(components[i]->angleY, 0, 1, 0);
 		glRotatef(components[i]->angleZ, 0, 0, 1);
 		glTranslatef(-centerX, -centerY, -centerZ);
-		glDrawElements(GL_TRIANGLES, components[i]->faces.size(), GL_UNSIGNED_INT, components[i]->faces.data());
+		for (int j = 0; j < c->pieces.size(); j++) {
+			useMat(c->pieces[j]->matName);
+			glDrawElements(GL_TRIANGLES, c->pieces[j]->faces.size(), GL_UNSIGNED_INT, c->pieces[j]->faces.data());
+			defaultMat();
+		}
 		glPopMatrix();
 	}
 	glDisableClientState(GL_NORMAL_ARRAY);
@@ -295,14 +324,29 @@ void Model::rotateZ(float angle)
 void Model::useMat(std::string name)
 {
 	for (int i = 0; i < materials.size();i++) {
-		if (materials[i].name.compare(name) == 0) {
-			glMaterialfv(GL_FRONT, GL_AMBIENT, materials[i].Ka.data());
-			glMaterialfv(GL_FRONT, GL_DIFFUSE, materials[i].Kd.data());
-			glMaterialfv(GL_FRONT, GL_SPECULAR, materials[i].Ks.data());
-			glMaterialfv(GL_FRONT, GL_EMISSION, materials[i].Ke.data());
+		if (materials[i]->name.compare(name) == 0) {
+			glMaterialfv(GL_FRONT, GL_AMBIENT, materials[i]->Ka.data());
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, materials[i]->Kd.data());
+			glMaterialfv(GL_FRONT, GL_SPECULAR, materials[i]->Ks.data());
+			glMaterialfv(GL_FRONT, GL_EMISSION, materials[i]->Ke.data());
 			return;
 		}
 	}
+}
+
+void Model::defaultMat()
+{
+	GLfloat ambdef[] = { 0.2, 0.2, 0.2, 1.0 };
+	GLfloat difdef[] = { 0.8, 0.8, 0.8, 1.0 };
+	GLfloat specdef[] = { 0,0,0, 1 };
+	GLfloat emdef[] = { 0,0,0,1 };
+
+	glMaterialfv(GL_FRONT, GL_AMBIENT, ambdef);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, difdef);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, specdef);
+	glMaterialfv(GL_FRONT, GL_EMISSION, emdef);
+
+
 }
 
 void Model::translate(float x, float y, float z)
