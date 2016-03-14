@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <GL/glut.h>
+#include <math.h>
 
 class Model
 {
@@ -15,6 +16,8 @@ private:
 	float angleY;
 	float angleX;
 	float angleZ;
+
+	bool bounding = true;
 
 	typedef struct {
 		std::string name;
@@ -29,7 +32,18 @@ private:
 
 	typedef struct {
 		std::string matName;
+		std::string name;
 		std::vector<unsigned int> faces;
+		float angleY;
+		float angleX;
+		float angleZ;
+
+		float maxX;
+		float maxY;
+		float maxZ;
+		float minX;
+		float minY;
+		float minZ;
 	} component;
 public:
 	std::vector<GLfloat> verticies;
@@ -37,8 +51,9 @@ public:
 	std::vector<GLfloat> textures;
 	std::vector<unsigned int> faces;
 	std::vector<GLubyte> colors;
-	std::vector<component> components;
+	std::vector<component*> components;
 	std::vector<mat> materials;
+	float scale = 1;
 	Model();
 	Model(float x, float y, float z);
 	~Model();
@@ -50,5 +65,7 @@ public:
 	void rotateZ(float angle);
 	void useMat(std::string name);
 	void translate(float x, float y, float z);
+
+	void rotateComponentByName(std::string name, float aX, float aY, float aZ);
 };
 

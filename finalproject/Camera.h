@@ -5,9 +5,6 @@
 class Camera
 {
 private:
-	float x;
-	float y;
-	float z;
 
 	float goalX;
 	float goalY;
@@ -15,9 +12,12 @@ private:
 
 	bool panning = false;
 
+public:
+	float x;
+	float y;
+	float z;
 	float angleY; //Angle over y axis
 	float angleX; //Angle over x axis
-public:
 	Camera();
 	~Camera();
 	void update();

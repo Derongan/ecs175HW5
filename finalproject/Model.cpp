@@ -41,6 +41,12 @@ bool Model::load(const std::string & path, const std::string & name)
 			std::istringstream ss(line.substr(2));
 			std::string name;
 			ss >> name;
+
+
+			components.push_back(comp);
+
+			comp = new component();
+			comp->name = name;
 		}
 		else if (line.substr(0,2) == "v ") { //Vertex
 			std::istringstream s(line.substr(2));
@@ -75,7 +81,7 @@ bool Model::load(const std::string & path, const std::string & name)
 			std::istringstream ss(line.substr(7));
 			std::string mtl;
 			ss >> mtl;
-
+			continue;
 			std::ifstream mtlfile;
 			mtlfile.open(path + '/' + mtl);
 
@@ -143,15 +149,10 @@ bool Model::load(const std::string & path, const std::string & name)
 			ss >> mtl;
 
 			printf("Using material %s\n", mtl.c_str());
-
-			//components.push_back(*comp);
-
-			//comp = new component();
-			//comp->matName = mtl;
 		}
 	}
 
-	components.push_back(*comp);
+	components.push_back(comp);
 
 	normals.resize(verticies.size());
 	for (int i = 0; i < faces.size(); i += 3) {
@@ -194,11 +195,32 @@ bool Model::load(const std::string & path, const std::string & name)
 
 		float val = sqrt(x*x + y*y + z*z);
 
-		/*normals[i] /= val;
+		normals[i] /= val;
 		normals[i+1] /= val;
-		normals[i+2] /= val;*/
+		normals[i+2] /= val;
 
 		//printf("%f %f %f\n", normals[i], normals[i + 1], normals[i + 2]);
+	}
+
+
+	//Calculate bounding boxes
+	for (auto c = components.begin(); c != components.end(); c++) {
+		component* cx = *c;
+		cx->minX = cx->minY = cx->minZ = FLT_MAX;
+		cx->maxX = cx->maxY = cx->maxZ = FLT_MIN;
+		for (int i = 0; i < cx->faces.size(); i++) {
+			float x = verticies[cx->faces[i]*3];
+			float y = verticies[cx->faces[i]*3+1];
+			float z = verticies[cx->faces[i]*3+2];
+
+			cx->maxX = fmaxf(cx->maxX, x);
+			cx->maxY = fmaxf(cx->maxY, y);
+			cx->maxZ = fmaxf(cx->maxZ, z);
+
+			cx->minX = fminf(cx->minX, x);
+			cx->minY = fminf(cx->minY, y);
+			cx->minZ = fminf(cx->minZ, z);
+		}
 	}
 
 	return true;
@@ -211,14 +233,34 @@ void Model::draw()
 	glRotatef(angleX, 1, 0, 0);
 	glRotatef(angleY, 0, 1, 0);
 	glRotatef(angleZ, 0, 0, 1);
-
+	glScalef(scale, scale, scale);
 	glEnableClientState(GL_VERTEX_ARRAY);						// Enable vertex arrays
 	glEnableClientState(GL_NORMAL_ARRAY);
 	glNormalPointer(GL_FLOAT, 0, normals.data());
 	glVertexPointer(3, GL_FLOAT, 0, verticies.data());			// Vertex Pointer to triangle array
 	for (int i = 0; i < components.size(); i++) {
-		useMat(components[i].matName);
-		glDrawElements(GL_TRIANGLES, components[i].faces.size(), GL_UNSIGNED_INT, components[i].faces.data());
+		component* c = components[i];
+		//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+		//if (c->name.compare("w0") != 0)
+		//	continue;
+
+		glPushMatrix();
+		float centerX = c->minX + .34;
+		float centerY = c->minY + .34;
+		float centerZ = c->minZ + .34;
+
+		//printf("%f %f %f\n", (c->maxX - c->minX) / 2, (c->maxY - c->minY) / 2, (c->maxZ - c->minZ) / 2);
+
+
+		//useMat(components[i]->matName);
+		glTranslatef(centerX, centerY, centerZ);
+		glRotatef(components[i]->angleX, 1, 0, 0);
+		glRotatef(components[i]->angleY, 0, 1, 0);
+		glRotatef(components[i]->angleZ, 0, 0, 1);
+		glTranslatef(-centerX, -centerY, -centerZ);
+		glDrawElements(GL_TRIANGLES, components[i]->faces.size(), GL_UNSIGNED_INT, components[i]->faces.data());
+		glPopMatrix();
 	}
 	glDisableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_VERTEX_ARRAY);						// Disable vertex arrays
@@ -268,4 +310,16 @@ void Model::translate(float x, float y, float z)
 	this->x += x;
 	this->y += y;
 	this->z += z;
+}
+
+void Model::rotateComponentByName(std::string name, float aX, float aY, float aZ)
+{
+	for (auto comp = components.begin(); comp != components.end(); comp++) {
+		if (name.compare((*comp)->name) == 0) {
+			(*comp)->angleX += aX;
+			(*comp)->angleY += aY;
+			(*comp)->angleZ += aZ;
+			return;
+		}
+	}
 }

@@ -10,6 +10,7 @@ public:
 	std::vector<Model *> models;
 	
 	UINT SkyboxTextures[6];
+	UINT ground;
 
 	const UINT SKYFRONT = 0;
 	const UINT SKYBACK = 1;

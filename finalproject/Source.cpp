@@ -6,9 +6,6 @@
 #include "Model.h"
 #include "Scene.h"
 #include "Camera.h"
-#include <assimp/cimport.h>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 Scene scene;
 Camera camera;
 
@@ -17,11 +14,28 @@ void timer(int d);
 void keyboard(unsigned char key, int x, int y);
 void special(int key, int x, int y);
 void reshape(int x, int y);
-
+//
 Model *wheel1;
 Model *wheel2;
 Model *wheel3;
 Model *wheel4;
+
+Model *california;
+
+Model *tree;
+
+bool running = false;
+int elapsed = 0;
+
+int start;
+
+
+double speed = .8;
+double wheelcirc = .7*3.141592653 * 5;
+
+double rots = 360.0 * (speed / wheelcirc);
+
+double decel;
 
 int main(int argc, char *argv[]) {
 	glutInit(&argc, argv);
@@ -34,42 +48,64 @@ int main(int argc, char *argv[]) {
 	glutKeyboardFunc(keyboard);
 	glutSpecialFunc(special);
 
-	glEnable(GL_TEXTURE_2D);
 	scene.loadSkybox("TropicalSunnyDay");
 
 
 	//Clear stuff
 	glClearDepth(1.0f);
 	glClearColor(1, 1, 1, 1);
+	
+	california = new Model;
+	california->load("../california", "california.obj");
+	california->rotateZ(90);
+	california->rotateX(-90);
+	california->translate(0, -.4, 0);
+	california->scale = 5;
+	
+	scene.addModel(california);
+
+
+	//tree = new Model;
+	//tree->load("../low poly tree", "low poly tree.obj");
+	//tree->translate(100, -10, 100);
+	//scene.addModel(tree);
+
 
 	//Objs
-	wheel1 = new Model;
-	wheel1->load("../car","wheel.obj");
+	//wheel1 = new Model;
+	//wheel1->load("../car","wheel.obj");
 
-	wheel1->rotateX(180);
+	//wheel1->translate(0, -.2, 0);
 
-	wheel2 = new Model(*wheel1);
-	wheel2->translate(20, 0, 0);
+	//wheel1->rotateX(180);
 
-	wheel3 = new Model(*wheel1);
-	wheel3->translate(0, 0, -20);
-	wheel3->rotateX(180);
+	//wheel2 = new Model(*wheel1);
+	//wheel2->translate(20, 0, 0);
 
-	wheel4 = new Model(*wheel3);
-	wheel4->translate(20, 0, 0);
+	//wheel3 = new Model(*wheel1);
+	//wheel3->translate(0, 0, -20);
+	//wheel3->rotateX(180);
 
-	scene.addModel(wheel1);
-	scene.addModel(wheel2);
-	scene.addModel(wheel3);
-	scene.addModel(wheel4);
+	//wheel4 = new Model(*wheel3);
+	//wheel4->translate(20, 0, 0);
+
+	//scene.addModel(wheel1);
+	//scene.addModel(wheel2);
+	//scene.addModel(wheel3);
+	//scene.addModel(wheel4);
 
 	//Enable stuff
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 	glShadeModel(GL_SMOOTH);
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
-	//glEnable(GL_LIGHT1);
+
+	GLfloat pos[] = { 0,200,0,1 };
+	glLightfv(GL_LIGHT0, GL_POSITION, pos);
+
+	glEnable(GL_LIGHT1);
 	//glEnable(GL_AUTO_NORMAL);
 
 
@@ -79,7 +115,7 @@ int main(int argc, char *argv[]) {
 	glLoadIdentity();
 	gluPerspective(40, 800.0/600.0, .01, 2048);
 
-	camera.moveTo(0, 20, 50,0,-.5);
+	camera.moveTo(-39, 16, -24, -.2, 2.1);
 
 
 	glutDisplayFunc(display);
@@ -106,7 +142,7 @@ void reshape(int w, int h) {
 	glViewport(0, 0, w, h);
 
 	// Set the correct perspective.
-	gluPerspective(40, ratio, .01, 2048);
+	gluPerspective(40, ratio, .01, 4000);
 
 	// Get Back to the Modelview
 	glMatrixMode(GL_MODELVIEW);
@@ -118,22 +154,43 @@ void display() {
 
 	scene.render();
 	camera.update();
-
 	glutSwapBuffers();
 	glFlush();
+
+	//printf("%f, %f, %f, %f, %f\n", camera.x, camera.y, camera.z, camera.angleX, camera.angleY);
 }
 
 void timer(int a)
 {
-	wheel1->rotateZ(-5);
-	wheel2->rotateZ(-5);
-	wheel3->rotateZ(5);
-	wheel4->rotateZ(5);
+	if (running && start + 10000 > glutGet(GLUT_ELAPSED_TIME)) {
 
-	wheel1->translate(-1, 0, 0);
-	wheel2->translate(-1, 0, 0);
-	wheel3->translate(-1, 0, 0);
-	wheel4->translate(-1, 0, 0);
+		if (start + 5000 < glutGet(GLUT_ELAPSED_TIME)) {
+			rots *= .95;
+			speed *= .95;
+		}
+
+		double amtrot = rots;
+		double amtmov = speed;
+
+		california->rotateComponentByName("w0", amtrot, 0, 0);
+		california->rotateComponentByName("w1", amtrot, 0, 0);
+		california->rotateComponentByName("w2", amtrot, 0, 0);
+		california->rotateComponentByName("w3", amtrot, 0, 0);
+
+		california->translate(amtmov, 0, 0);
+
+		camera.x += amtmov;
+
+		//wheel1->rotateZ(-1);
+		//wheel2->rotateZ(-1);
+		//wheel3->rotateZ(1);
+		//wheel4->rotateZ(1);
+
+		//wheel1->translate(-.06, 0, 0);
+		//wheel2->translate(-.06, 0, 0);
+		//wheel3->translate(-.06, 0, 0);
+		//wheel4->translate(-.06, 0, 0);
+	}
 	glutTimerFunc(25, timer, 0);
 	glutPostRedisplay();
 }
@@ -145,6 +202,10 @@ void keyboard(unsigned char key, int r, int d) {
 		break;
 	case 's':
 		camera.backward(2.0);
+		break;
+	case ' ':
+		running = true;
+		start = glutGet(GLUT_ELAPSED_TIME);
 		break;
 	}
 	glutPostRedisplay();
