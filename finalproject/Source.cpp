@@ -65,10 +65,10 @@ int main(int argc, char *argv[]) {
 	scene.addModel(california);
 
 
-	//tree = new Model;
-	//tree->load("../low poly tree", "low poly tree.obj");
-	//tree->translate(100, -10, 100);
-	//scene.addModel(tree);
+	tree = new Model;
+	tree->load("../low poly tree", "low poly tree.obj");
+	tree->translate(100, -10, 100);
+	scene.addModel(tree);
 
 
 	//Objs
