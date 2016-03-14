@@ -30,7 +30,7 @@ int elapsed = 0;
 int start;
 
 
-double speed = .8;
+double speed = .4;
 double wheelcirc = .7*3.141592653 * 5;
 
 double rots = 360.0 * (speed / wheelcirc);
