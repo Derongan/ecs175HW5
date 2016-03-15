@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 	glClearColor(1, 1, 1, 1);
 	
 	california = new Model;
-	california->load("../california", "california.obj");
+	california->load("../california", "california.objt");
 	california->rotateZ(90);
 	california->rotateX(-90);
 	california->translate(0, -.4, 0);
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
 
 
 	tree = new Model;
-	tree->load("../low poly tree", "low poly tree.obj");
+	tree->load("../low poly tree", "low poly tree.objt");
 	tree->translate(100, -10, 100);
 	scene.addModel(tree);
 
